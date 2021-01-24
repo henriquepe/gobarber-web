@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import React, { useCallback, useRef, useContext } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
 import * as Yup from 'yup';
+import { Link, useHistory } from 'react-router-dom';
 
-import { Container, Content, Background } from './styles';
+import { useToast } from '../../hooks/toast';
 
-import { useAuth } from '../../hooks/AuthContext';
+import { Container, Content, Background, AnimationContainer } from './styles';
+
+import { useAuth } from '../../hooks/auth';
 
 import logoImg from '../../assets/logo.svg';
 
@@ -22,8 +25,10 @@ interface SignInFormData {
 
 const SignIn: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
+  const history = useHistory();
 
   const { signIn } = useAuth();
+  const { addToast } = useToast();
 
   const handleSubmit = useCallback(
     async (data: SignInFormData) => {
@@ -41,10 +46,12 @@ const SignIn: React.FC = () => {
           abortEarly: false,
         });
 
-        signIn({
+        await signIn({
           email: data.email,
           password: data.password,
         });
+
+        history.push('/dashboard');
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
           const errors = getValidationErrors(err);
@@ -53,46 +60,48 @@ const SignIn: React.FC = () => {
         }
 
         // disparar toast
-
-        // o formato do set errors é exatamente igual o do abaixo: a propriedade e depois o erro.
-
-        /* Set all errors
-formRef.current.setErrors({
-  name: 'Name is required',
-  address: {
-    street: 'Street not found',
-  },
-}); */
+        addToast({
+          title: 'Erro na autenticação',
+          type: 'error',
+          description: 'Email ou senha inválido',
+        });
       }
     },
-    [signIn],
+    [signIn, addToast, history],
   );
 
   return (
     <Container>
       <Content>
-        <img src={logoImg} alt="GoBarber" />
+        <AnimationContainer>
+          <img src={logoImg} alt="GoBarber" />
 
-        <Form ref={formRef} onSubmit={handleSubmit}>
-          <h1>Faça seu logon</h1>
-          <Input icon={FiMail} placeholder="E-mail" type="text" name="email" />
-          <Input
-            icon={FiLock}
-            type="password"
-            name="password"
-            placeholder="Senha"
-          />
-          <Button name="sigin" type="submit">
-            Entrar
-          </Button>
+          <Form ref={formRef} onSubmit={handleSubmit}>
+            <h1>Faça seu logon</h1>
+            <Input
+              icon={FiMail}
+              placeholder="E-mail"
+              type="text"
+              name="email"
+            />
+            <Input
+              icon={FiLock}
+              type="password"
+              name="password"
+              placeholder="Senha"
+            />
+            <Button name="sigin" type="submit">
+              Entrar
+            </Button>
 
-          <a href="forgot">Esqueci minha senha</a>
-        </Form>
+            <a href="forgot">Esqueci minha senha</a>
+          </Form>
 
-        <a href="create account">
-          <FiLogIn />
-          Criar conta
-        </a>
+          <Link to="/signup">
+            <FiLogIn />
+            Criar conta
+          </Link>
+        </AnimationContainer>
       </Content>
       <Background />
     </Container>
